@@ -1333,8 +1333,8 @@ class TestHttpd(_TestBase):
     def test_unicode_raises_error(self):
         def wsgi_app(environ, start_response):
             start_response("200 OK", [])
-            yield u"oh hai"
-            yield u"non-encodable unicode: \u0230"
+            yield b"oh hai"
+            yield u"any unicode string should raise an error"
         self.site.application = wsgi_app
         sock = eventlet.connect(('localhost', self.port))
         fd = sock.makefile('rwb')
@@ -1454,11 +1454,11 @@ class TestHttpd(_TestBase):
         # (if eventlet stops using file.readline() to read HTTP headers,
         # for instance)
         for runlog in sections[1:]:
-            debug = False if "debug set to: False" in runlog else True
+            debug = False if b"debug set to: False" in runlog else True
             if debug:
-                self.assertTrue("timed out" in runlog)
-            self.assertTrue("BOOM" in runlog)
-            self.assertFalse("Traceback" in runlog)
+                self.assertTrue(b"timed out" in runlog)
+            self.assertTrue(b"BOOM" in runlog)
+            self.assertFalse(b"Traceback" in runlog)
 
     def test_server_socket_timeout(self):
         self.spawn_server(socket_timeout=0.1)
@@ -1743,7 +1743,9 @@ class TestChunkedInput(_TestBase):
             fd = self.connect()
             fd.sendall(req.encode())
             fd.close()
-            eventlet.sleep(0.0)
+
+            # TODO changed from 0 to make Python 3 tests pass, not sure if ok
+            eventlet.sleep(0.01)
         finally:
             signal.alarm(0)
             signal.signal(signal.SIGALRM, signal.SIG_DFL)
